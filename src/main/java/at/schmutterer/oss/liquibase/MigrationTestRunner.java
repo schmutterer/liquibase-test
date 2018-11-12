@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -216,14 +217,25 @@ public class MigrationTestRunner extends BlockJUnit4ClassRunner {
         cleanupChangelog(connection);
         List<String> tableNames = getTableNames(connection, config.getSchema());
         tableNames.removeAll(CHANGELOG_TABLES);
-        for (String tableName : tableNames) {
-            try (java.sql.Statement statement = connection.createStatement()) {
-                statement.execute("DELETE FROM " + tableName);
+        int tries = 5;
+        for (int i = 0; i < tries; i++) {
+            Iterator<String> tableIterator = tableNames.iterator();
+            while (tableIterator.hasNext()) {
+                try (java.sql.Statement statement = connection.createStatement()) {
+                    statement.execute("DELETE FROM " + tableIterator.next());
+                    tableIterator.remove();
+                } catch (SQLException e) {
+                    // can happen because of referential integrity
+                }
+            }
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
+            if (tableNames.isEmpty()) {
+                return;
             }
         }
-        if (!connection.getAutoCommit()) {
-            connection.commit();
-        }
+        log.error("Unable to clean up the database for further tests!");
     }
 
     public static List<String> getTableNames(Connection connection, String schema) throws SQLException {
