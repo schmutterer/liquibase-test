@@ -16,7 +16,7 @@
 
   <groupId>at.schmutterer.oss.liquibase</groupId>
   <artifactId>liquibase-test</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.1</version>
 
   <description>
     Utilities for writing Unit Tests for Liquibase Migrations
